@@ -26,6 +26,8 @@ import com.guardian.child.GuardianApp
 import com.guardian.child.data.remote.DeviceInfo
 import com.guardian.child.data.remote.PairRequest
 import com.guardian.child.receivers.GuardianDeviceAdminReceiver
+import com.guardian.child.services.GuardianAccessibilityService
+import com.guardian.child.services.GuardianNotificationListener
 import com.guardian.child.services.MonitorForegroundService
 import kotlinx.coroutines.launch
 
@@ -62,7 +64,7 @@ fun SetupScreen(onPaired: () -> Unit) {
 
         Text("Guardian Setup", fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
-        Text("Step ${step + 1} of 5", color = MaterialTheme.colorScheme.primary)
+        Text("Step ${step + 1} of 6", color = MaterialTheme.colorScheme.primary)
         Spacer(Modifier.height(32.dp))
 
         when (step) {
@@ -118,7 +120,8 @@ fun SetupScreen(onPaired: () -> Unit) {
             )
             2 -> AccessibilityStep(onNext = { step = 3 })
             3 -> DeviceAdminStep(context = context, onNext = { step = 4 })
-            4 -> BatteryStep(context = context, onFinish = {
+            4 -> NotificationListenerStep(context = context, onNext = { step = 5 })
+            5 -> BatteryStep(context = context, onFinish = {
                 val intent = Intent(context, MonitorForegroundService::class.java)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     context.startForegroundService(intent)
@@ -182,9 +185,34 @@ fun PermissionStep(onRequest: () -> Unit, onNext: () -> Unit) {
 @Composable
 fun AccessibilityStep(onNext: () -> Unit) {
     val context = LocalContext.current
+    val isEnabled = remember { GuardianAccessibilityService.isRunning() }
+
     Text("Enable Accessibility Service", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(8.dp))
     Text("This allows Guardian to monitor app usage and provide screen time controls.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(Modifier.height(24.dp))
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isEnabled) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Status", fontWeight = FontWeight.Medium)
+            Text(
+                if (isEnabled) "Enabled" else "Disabled",
+                color = if (isEnabled) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+
     Spacer(Modifier.height(24.dp))
 
     Button(
@@ -203,9 +231,34 @@ fun AccessibilityStep(onNext: () -> Unit) {
 
 @Composable
 fun DeviceAdminStep(context: Context, onNext: () -> Unit) {
+    val isAdminActive = remember { GuardianDeviceAdminReceiver.isAdminActive(context) }
+
     Text("Activate Device Admin", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(8.dp))
     Text("This allows Guardian to lock the device remotely and prevent uninstallation.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(Modifier.height(24.dp))
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isAdminActive) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Status", fontWeight = FontWeight.Medium)
+            Text(
+                if (isAdminActive) "Active" else "Inactive",
+                color = if (isAdminActive) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+
     Spacer(Modifier.height(24.dp))
 
     Button(
@@ -234,7 +287,6 @@ fun BatteryStep(context: Context, onFinish: () -> Unit) {
 
     Button(
         onClick = {
-            val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager
             val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                 data = android.net.Uri.parse("package:${context.packageName}")
             }
@@ -252,4 +304,57 @@ fun BatteryStep(context: Context, onFinish: () -> Unit) {
     ) {
         Text("Finish Setup")
     }
+}
+
+@Composable
+fun NotificationListenerStep(context: Context, onNext: () -> Unit) {
+    val isEnabled = remember { isNotificationListenerEnabled(context) }
+
+    Text("Enable Notification Listener", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+    Spacer(Modifier.height(8.dp))
+    Text("This allows Guardian to monitor notifications for app usage tracking.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Spacer(Modifier.height(24.dp))
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isEnabled) MaterialTheme.colorScheme.primaryContainer
+                else MaterialTheme.colorScheme.errorContainer
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text("Status", fontWeight = FontWeight.Medium)
+            Text(
+                if (isEnabled) "Enabled" else "Disabled",
+                color = if (isEnabled) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.error
+            )
+        }
+    }
+
+    Spacer(Modifier.height(24.dp))
+
+    Button(
+        onClick = {
+            context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Open Notification Settings")
+    }
+
+    Spacer(Modifier.height(8.dp))
+    TextButton(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
+        Text("Continue")
+    }
+}
+
+fun isNotificationListenerEnabled(context: Context): Boolean {
+    val cn = ComponentName(context, GuardianNotificationListener::class.java)
+    val flat = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+    return flat?.contains(cn.flattenToString()) == true
 }

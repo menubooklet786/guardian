@@ -45,6 +45,16 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
+        freeCompilerArgs += [
+            '-Xjvm-default=all'
+        ]
+    }
+
+    // Fix kapt module access for JDK 17+
+    tasks.withType(org.jetbrains.kotlin.gradle.tasks.KaptGenerateStubs).configureEach {
+        kotlinOptions {
+            jvmTarget = '17'
+        }
     }
 
     buildFeatures {
@@ -54,6 +64,13 @@ android {
 
     composeOptions {
         kotlinCompilerExtensionVersion '1.5.4'
+    }
+
+    // Fix kapt module access for JDK 17+
+    kapt {
+        javacOptions {
+            option("-Xmaxerrs", 500)
+        }
     }
 }
 
