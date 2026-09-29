@@ -1,0 +1,45 @@
+# Dependencies
+node_modules/
+.pnpm-store
+
+# Build outputs
+android-child/app/build/
+android-parent/app/build/
+android-child/build/
+android-parent/build/
+web-dashboard/.next/
+web-dashboard/out/
+web-dashboard/dist/
+web-dashboard/tsconfig.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.production
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Gradle
+.gradle/
+local.properties
+gradle-wrapper.jar
+
+# APK files in build directories (not in public/)
+android-child/app/build/*.apk
+android-parent/app/build/*.apk
+*.apk
+!backend/public/apk/*.apk
+
+# Keystore
+*.keystore
+*.jks
+
+# Railway
+.railway/
