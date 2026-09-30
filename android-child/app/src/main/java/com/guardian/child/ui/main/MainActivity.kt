@@ -123,9 +123,10 @@ fun GuardianRootScreen() {
 @Composable
 fun StatusScreen(onStop: () -> Unit) {
     val context = LocalContext.current
-    var accessibilityActive by remember { mutableStateOf(GuardianAccessibilityService.isRunning()) }
-    var notifListenerActive by remember { mutableStateOf(isNotificationListenerEnabled(context)) }
-    var adminActive by remember { mutableStateOf(GuardianDeviceAdminReceiver.isAdminActive(context)) }
+    var refreshKey by remember { mutableStateOf(0) }
+    var accessibilityActive by remember(refreshKey) { mutableStateOf(GuardianAccessibilityService.isRunning()) }
+    var notifListenerActive by remember(refreshKey) { mutableStateOf(isNotificationListenerEnabled(context)) }
+    var adminActive by remember(refreshKey) { mutableStateOf(GuardianDeviceAdminReceiver.isAdminActive(context)) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
@@ -154,7 +155,13 @@ fun StatusScreen(onStop: () -> Unit) {
         Spacer(Modifier.height(8.dp))
         ServiceStatusCard("Device Admin", adminActive)
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(24.dp))
+
+        OutlinedButton(onClick = { refreshKey++ }) {
+            Text("Refresh Status")
+        }
+
+        Spacer(Modifier.height(16.dp))
 
         Button(
             onClick = onStop,
@@ -174,17 +181,31 @@ fun ServiceStatusCard(name: String, active: Boolean) {
                 else MaterialTheme.colorScheme.errorContainer
         )
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(name, fontWeight = FontWeight.Medium)
-            Text(
-                if (active) "Active" else "Inactive",
-                color = if (active) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.error
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(name, fontWeight = FontWeight.Medium)
+                Text(
+                    if (active) "Active" else "Inactive",
+                    color = if (active) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error
+                )
+            }
+            if (!active) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    when (name) {
+                        "Accessibility Service" -> "Settings > Accessibility > Guardian"
+                        "Notification Listener" -> "Settings > Notifications > Guardian"
+                        "Device Admin" -> "Settings > Security > Device admin apps"
+                        else -> ""
+                    },
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
