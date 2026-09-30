@@ -54,7 +54,7 @@ fun SetupScreen(onPaired: () -> Unit) {
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { /* proceed to next step regardless */ }
+    ) { step = 2 }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp).verticalScroll(rememberScrollState()),
