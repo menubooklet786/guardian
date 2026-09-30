@@ -103,18 +103,23 @@ fun SetupScreen(onPaired: () -> Unit) {
             )
             1 -> PermissionStep(
                 onRequest = {
-                    permissionLauncher.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_BACKGROUND_LOCATION,
-                            Manifest.permission.READ_PHONE_STATE,
-                            Manifest.permission.READ_CALL_LOG,
-                            Manifest.permission.READ_CONTACTS,
-                            Manifest.permission.READ_MEDIA_IMAGES,
-                            Manifest.permission.READ_MEDIA_VIDEO,
-                            Manifest.permission.POST_NOTIFICATIONS
-                        )
+                    val permissions = mutableListOf(
+                        Manifest.permission.ACCESS_FINE_LOCATION,
+                        Manifest.permission.READ_PHONE_STATE,
+                        Manifest.permission.READ_CALL_LOG,
+                        Manifest.permission.READ_CONTACTS,
+                        Manifest.permission.POST_NOTIFICATIONS
                     )
+
+                    // Add version-specific media permissions
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        permissions.add(Manifest.permission.READ_MEDIA_IMAGES)
+                        permissions.add(Manifest.permission.READ_MEDIA_VIDEO)
+                    } else {
+                        permissions.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+                    }
+
+                    permissionLauncher.launch(permissions.toTypedArray())
                 },
                 onNext = { step = 2 }
             )
