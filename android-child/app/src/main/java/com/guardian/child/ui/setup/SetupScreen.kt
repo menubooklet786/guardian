@@ -190,12 +190,12 @@ fun PermissionStep(onRequest: () -> Unit, onNext: () -> Unit) {
 @Composable
 fun AccessibilityStep(onNext: () -> Unit) {
     val context = LocalContext.current
-    val isEnabled = remember { GuardianAccessibilityService.isRunning() }
+    var isEnabled by remember { mutableStateOf(GuardianAccessibilityService.isRunning()) }
 
     Text("Enable Accessibility Service", fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
     Spacer(Modifier.height(8.dp))
     Text("This allows Guardian to monitor app usage and provide screen time controls.", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    Spacer(Modifier.height(24.dp))
+    Spacer(Modifier.height(16.dp))
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -204,17 +204,26 @@ fun AccessibilityStep(onNext: () -> Unit) {
                 else MaterialTheme.colorScheme.errorContainer
         )
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Status", fontWeight = FontWeight.Medium)
-            Text(
-                if (isEnabled) "Enabled" else "Disabled",
-                color = if (isEnabled) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.error
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Status", fontWeight = FontWeight.Medium)
+                Text(
+                    if (isEnabled) "Enabled" else "Disabled",
+                    color = if (isEnabled) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.error
+                )
+            }
+            if (!isEnabled) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Look for 'Guardian' under 'Installed services' or 'Downloaded services'",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 
@@ -227,6 +236,13 @@ fun AccessibilityStep(onNext: () -> Unit) {
         modifier = Modifier.fillMaxWidth()
     ) {
         Text("Open Accessibility Settings")
+    }
+    Spacer(Modifier.height(8.dp))
+    OutlinedButton(
+        onClick = { isEnabled = GuardianAccessibilityService.isRunning() },
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text("Check Status")
     }
     Spacer(Modifier.height(8.dp))
     TextButton(onClick = onNext, modifier = Modifier.fillMaxWidth()) {
